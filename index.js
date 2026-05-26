@@ -53,11 +53,18 @@ function buildEmbed(stats) {
     : null;
 
   return new EmbedBuilder()
+    // ✅ Title is ONLY dashboard, clickable
     .setTitle("📊 Roblox Game Dashboard")
-    .setDescription(`**[${stats.name}](${gameUrl})**`)
     .setURL(gameUrl)
+
+    // ✅ Game name is separate line (also clickable)
+    .setDescription(`🎮 **[${stats.name}](${gameUrl})**`)
+
     .setColor(0x00bfff)
+
+    // ✅ Thumbnail fixed
     .setThumbnail(thumbnailUrl)
+
     .addFields(
       { name: "👥 Players", value: `\`\`\`${stats.players}\`\`\``, inline: true },
       { name: "👀 Visits", value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``, inline: true },
