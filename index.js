@@ -28,6 +28,10 @@ async function fetchStats() {
   const votes = voteRes.data.data[0];
 
   return {
+    name: game.name,
+    placeId: game.rootPlaceId,
+    universeId: game.universeId,
+    icon: game.iconImageAssetId,
     players: game.playing || 0,
     visits: game.visits || 0,
     likes: votes.upVotes || 0,
@@ -42,10 +46,18 @@ function buildEmbed(stats) {
       ? ((stats.likes / (stats.likes + stats.dislikes)) * 100).toFixed(1)
       : "0.0";
 
+  const gameUrl = `https://www.roblox.com/games/${stats.placeId}`;
+
+  const thumbnailUrl = stats.icon
+    ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
+    : null;
+
   return new EmbedBuilder()
     .setTitle("📊 Roblox Game Dashboard")
-    .setDescription("Live analytics updating every 60 seconds")
+    .setDescription(`**[${stats.name}](${gameUrl})**`)
+    .setURL(gameUrl)
     .setColor(0x00bfff)
+    .setThumbnail(thumbnailUrl)
     .addFields(
       { name: "👥 Players", value: `\`\`\`${stats.players}\`\`\``, inline: true },
       { name: "👀 Visits", value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``, inline: true },
