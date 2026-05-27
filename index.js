@@ -1,4 +1,12 @@
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
+} = require("discord.js");
+
 const axios = require("axios");
 
 const client = new Client({
@@ -10,10 +18,9 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const UNIVERSE_ID = process.env.UNIVERSE_ID;
 
-// Stores the live message
 let messageId = null;
 
-// Fetch Roblox stats
+// ===== FETCH ROBLOX DATA =====
 async function fetchStats() {
   const gameRes = await axios.get(
     `https://games.roblox.com/v1/games?universeIds=${UNIVERSE_ID}`
@@ -30,7 +37,6 @@ async function fetchStats() {
   return {
     name: game.name,
     placeId: game.rootPlaceId,
-    universeId: game.universeId,
     icon: game.iconImageAssetId,
     players: game.playing || 0,
     visits: game.visits || 0,
@@ -39,32 +45,22 @@ async function fetchStats() {
   };
 }
 
-// Build dashboard embed
+// ===== BUILD DASHBOARD EMBED =====
 function buildEmbed(stats) {
   const likeRatio =
     stats.likes + stats.dislikes > 0
       ? ((stats.likes / (stats.likes + stats.dislikes)) * 100).toFixed(1)
       : "0.0";
 
-  const gameUrl = `https://www.roblox.com/games/${stats.placeId}`;
-
-  const thumbnailUrl = stats.icon
-    ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
-    : null;
-
   return new EmbedBuilder()
-    // ✅ Title is ONLY dashboard, clickable
     .setTitle("📊 Roblox Game Dashboard")
-    .setURL(gameUrl)
-
-    // ✅ Game name is separate line (also clickable)
-    .setDescription(`🎮 **[${stats.name}](${gameUrl})**`)
-
+    .setDescription(`🎮 ${stats.name}`)
     .setColor(0x00bfff)
-
-    // ✅ Thumbnail fixed
-    .setThumbnail(thumbnailUrl)
-
+    .setThumbnail(
+      stats.icon
+        ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
+        : null
+    )
     .addFields(
       { name: "👥 Players", value: `\`\`\`${stats.players}\`\`\``, inline: true },
       { name: "👀 Visits", value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``, inline: true },
@@ -76,7 +72,7 @@ function buildEmbed(stats) {
     .setTimestamp();
 }
 
-// Update or create embed message
+// ===== UPDATE EMBED =====
 async function updateEmbed() {
   try {
     const stats = await fetchStats();
@@ -86,15 +82,28 @@ async function updateEmbed() {
 
     const embed = buildEmbed(stats);
 
-    // First run → create message
+    const gameUrl = `https://www.roblox.com/games/${stats.placeId}`;
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel("Open Game")
+        .setStyle(ButtonStyle.Link)
+        .setURL(gameUrl)
+    );
+
     if (!messageId) {
-      const msg = await channel.send({ embeds: [embed] });
+      const msg = await channel.send({
+        embeds: [embed],
+        components: [row]
+      });
       messageId = msg.id;
       console.log("Created dashboard embed");
     } else {
-      // Update existing message
       const msg = await channel.messages.fetch(messageId);
-      await msg.edit({ embeds: [embed] });
+      await msg.edit({
+        embeds: [embed],
+        components: [row]
+      });
       console.log("Updated dashboard embed");
     }
 
@@ -103,13 +112,13 @@ async function updateEmbed() {
   }
 }
 
-// Bot ready
+// ===== BOT READY =====
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   updateEmbed();
-  setInterval(updateEmbed, 60000); // 60s refresh
+  setInterval(updateEmbed, 60000);
 });
 
-// Login
+// ===== LOGIN =====
 client.login(DISCORD_TOKEN);
