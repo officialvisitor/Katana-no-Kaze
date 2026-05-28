@@ -53,50 +53,61 @@ function buildEmbed(stats) {
       : "0.0";
 
   return new EmbedBuilder()
-    .setTitle("📊 Roblox Game Dashboard")
-    .setDescription(`<:KnK:1509436931988258866> ${stats.name}`)
+    // HEADER (acts like a dashboard title bar)
+    .setTitle("📊 Roblox Analytics Dashboard")
+    .setDescription(
+      [
+        `> <:KnK:1509436931988258866> **${stats.name}**`,
+        `> Live game performance tracking`,
+      ].join("\n")
+    )
     .setColor(0x00bfff)
 
-    // Thumbnail
+    // GAME ICON (like a site logo)
     .setThumbnail(
       stats.icon
         ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
         : null
     )
 
-    // Stats
+    // STATS SECTION (grouped like a panel)
     .addFields(
       {
-        name: "👥 Players",
+        name: "👥 Players Online",
         value: `\`\`\`${stats.players}\`\`\``,
-        inline: true
+        inline: true,
       },
       {
-        name: "👀 Visits",
+        name: "👀 Total Visits",
         value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``,
-        inline: true
+        inline: true,
+      },
+      {
+        name: "━━━━━━━━━━━━",
+        value: "\u200b",
+        inline: false,
       },
       {
         name: "⭐ Likes",
         value: `\`\`\`${stats.likes.toLocaleString()}\`\`\``,
-        inline: true
+        inline: true,
       },
       {
         name: "❌ Dislikes",
         value: `\`\`\`${stats.dislikes.toLocaleString()}\`\`\``,
-        inline: true
+        inline: true,
       },
       {
         name: "📈 Like Ratio",
         value: `\`\`\`${likeRatio}%\`\`\``,
-        inline: true
+        inline: true,
       }
     )
 
+    // FOOTER (feels like system status bar)
     .setFooter({
-      text: "Live Roblox Analytics Dashboard"
+      text: "Live Roblox Analytics • updates every 60s",
     })
-
     .setTimestamp();
 }
 
