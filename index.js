@@ -54,21 +54,49 @@ function buildEmbed(stats) {
 
   return new EmbedBuilder()
     .setTitle("📊 Roblox Game Dashboard")
-    .setDescription(`🎮 ${stats.name}`)
+    .setDescription(`<:KnK:1509436931988258866> ${stats.name}`)
     .setColor(0x00bfff)
+
+    // Thumbnail
     .setThumbnail(
       stats.icon
         ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
         : null
     )
+
+    // Stats
     .addFields(
-      { name: "👥 Players", value: `\`\`\`${stats.players}\`\`\``, inline: true },
-      { name: "👀 Visits", value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``, inline: true },
-      { name: "⭐ Likes", value: `\`\`\`${stats.likes.toLocaleString()}\`\`\``, inline: true },
-      { name: "❌ Dislikes", value: `\`\`\`${stats.dislikes.toLocaleString()}\`\`\``, inline: true },
-      { name: "📈 Like Ratio", value: `\`\`\`${likeRatio}%\`\`\``, inline: true }
+      {
+        name: "👥 Players",
+        value: `\`\`\`${stats.players}\`\`\``,
+        inline: true
+      },
+      {
+        name: "👀 Visits",
+        value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``,
+        inline: true
+      },
+      {
+        name: "⭐ Likes",
+        value: `\`\`\`${stats.likes.toLocaleString()}\`\`\``,
+        inline: true
+      },
+      {
+        name: "❌ Dislikes",
+        value: `\`\`\`${stats.dislikes.toLocaleString()}\`\`\``,
+        inline: true
+      },
+      {
+        name: "📈 Like Ratio",
+        value: `\`\`\`${likeRatio}%\`\`\``,
+        inline: true
+      }
     )
-    .setFooter({ text: "Live Roblox Analytics Dashboard" })
+
+    .setFooter({
+      text: "Live Roblox Analytics Dashboard"
+    })
+
     .setTimestamp();
 }
 
@@ -77,13 +105,29 @@ async function updateEmbed() {
   try {
     const stats = await fetchStats();
 
+    // Dynamic bot status
+    client.user.setPresence({
+      activities: [
+        {
+          name: `${stats.players} players in ${stats.name}`,
+          type: 3 // Watching
+        }
+      ],
+      status: "online"
+    });
+
     const channel = await client.channels.fetch(CHANNEL_ID);
-    if (!channel) return console.log("Channel not found");
+
+    if (!channel) {
+      console.log("Channel not found");
+      return;
+    }
 
     const embed = buildEmbed(stats);
 
     const gameUrl = `https://www.roblox.com/games/${stats.placeId}`;
 
+    // Open Game button
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setLabel("Open Game")
@@ -91,19 +135,24 @@ async function updateEmbed() {
         .setURL(gameUrl)
     );
 
+    // Create or update embed
     if (!messageId) {
       const msg = await channel.send({
         embeds: [embed],
         components: [row]
       });
+
       messageId = msg.id;
+
       console.log("Created dashboard embed");
     } else {
       const msg = await channel.messages.fetch(messageId);
+
       await msg.edit({
         embeds: [embed],
         components: [row]
       });
+
       console.log("Updated dashboard embed");
     }
 
@@ -117,6 +166,8 @@ client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   updateEmbed();
+
+  // Refresh every 60 seconds
   setInterval(updateEmbed, 60000);
 });
 
