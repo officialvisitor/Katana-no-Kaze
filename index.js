@@ -96,7 +96,7 @@ function buildEmbed(stats) {
   return new EmbedBuilder()
     .setTitle("📊 Roblox Game Dashboard")
     .setDescription(`\<:KnK:1509812496406675618> ${stats.name}`)
-    .setColor(0x00bfff)
+    .setColor(000000)
     .setThumbnail(
       stats.icon
         ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
