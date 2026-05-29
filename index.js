@@ -95,7 +95,7 @@ function buildEmbed(stats) {
 
   return new EmbedBuilder()
     .setTitle("📊 Roblox Game Dashboard")
-    .setDescription(`<:KnK:1509436931988258866> ${stats.name}`)
+    .setDescription(`\<:KnK:1509812496406675618> ${stats.name}`)
     .setColor(0x00bfff)
     .setThumbnail(
       stats.icon
@@ -109,7 +109,7 @@ function buildEmbed(stats) {
       { name: "❌ Dislikes", value: `\`\`\`${stats.dislikes.toLocaleString()}\`\`\``, inline: true },
       { name: "📈 Like Ratio", value: `\`\`\`${likeRatio}%\`\`\``, inline: true }
     )
-    .setFooter({ text: "Live Roblox Analytics Dashboard" })
+    .setFooter({ text: "Live Roblox Stats" })
     .setTimestamp();
 }
 
