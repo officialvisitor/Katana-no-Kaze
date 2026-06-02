@@ -11,54 +11,61 @@ const axios = require("axios");
 const fs = require("fs");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
-// ===== ENV =====
+// ===== ENV VARIABLES =====
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
-const UNIVERSE_ID = process.env.UNIVERSE_ID;
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
+const JOINS_CHANNEL_ID = process.env.JOINS_CHANNEL_ID;
+const OWNER_ROLE_ID = process.env.OWNER_ROLE_ID;
+const UNIVERSE_ID = process.env.UNIVERSE_ID;
 
 // ===== FILE STORAGE =====
-const MILESTONE_FILE = "./milestones.json";
+const DATA_FILE = "./milestones.json";
 
 // ===== MESSAGE IDS =====
 let dashboardMessageId = null;
-let milestoneMessageId = null;
 
-// ===== MILESTONES SETUP =====
+// ===== MILESTONES =====
 const milestonesList = [
-  { value: 0, label: "Development started - Nov 20, 2025" },
-  { value: 1000, label: "1,000 visits" },
-  { value: 5000, label: "5,000 visits" },
-  { value: 10000, label: "10,000 visits" },
-  { value: 25000, label: "25,000 visits" },
-  { value: 50000, label: "50,000 visits" },
-  { value: 100000, label: "100,000 visits" },
-  { value: 250000, label: "250,000 visits" },
-  { value: 500000, label: "500,000 visits" },
-  { value: 1000000, label: "1,000,000 visits" }
+  1000,
+  5000,
+  10000,
+  25000,
+  50000,
+  100000,
+  250000,
+  500000,
+  1000000
 ];
 
-// ===== LOAD / SAVE MILESTONES =====
-function loadMilestones() {
-  if (!fs.existsSync(MILESTONE_FILE)) {
+// ===== LOAD DATA =====
+function loadData() {
+  if (!fs.existsSync(DATA_FILE)) {
     const initial = {
-      reached: [0],
+      reached: [],
       history: [
         "Development started - Nov 20, 2025"
-      ]
+      ],
+      milestoneMessageId: null
     };
-    fs.writeFileSync(MILESTONE_FILE, JSON.stringify(initial, null, 2));
+
+    fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
+
     return initial;
   }
 
-  return JSON.parse(fs.readFileSync(MILESTONE_FILE));
+  return JSON.parse(fs.readFileSync(DATA_FILE));
 }
 
-function saveMilestones(data) {
-  fs.writeFileSync(MILESTONE_FILE, JSON.stringify(data, null, 2));
+// ===== SAVE DATA =====
+function saveData(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
 // ===== FETCH ROBLOX DATA =====
@@ -86,6 +93,89 @@ async function fetchStats() {
   };
 }
 
+// ===== PROGRESS BAR =====
+function makeProgressBar(current, goal) {
+  const size = 10;
+  const percent = Math.min(current / goal, 1);
+
+  const filled = Math.round(size * percent);
+  const empty = size - filled;
+
+  return `${"█".repeat(filled)}${"░".repeat(empty)} ${Math.round(percent * 100)}%`;
+}
+
+// ===== GET NEXT MILESTONE =====
+function getNextMilestone(visits) {
+  for (const milestone of milestonesList) {
+    if (visits < milestone) {
+      return milestone;
+    }
+  }
+
+  return null;
+}
+
+// ===== CHECK MILESTONES =====
+async function checkMilestones(stats) {
+  const data = loadData();
+
+  for (const milestone of milestonesList) {
+    if (
+      stats.visits >= milestone &&
+      !data.reached.includes(milestone)
+    ) {
+      data.reached.push(milestone);
+
+      const date = new Date().toLocaleString();
+
+      data.history.push(
+        `${milestone.toLocaleString()} visits - ${date}`
+      );
+
+      saveData(data);
+
+      // ===== OWNER PING =====
+      try {
+        const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+
+        if (logChannel) {
+          await logChannel.send(
+            `<@&${OWNER_ROLE_ID}> 🎉 ${stats.name} reached ${milestone.toLocaleString()} visits!`
+          );
+        }
+      } catch (err) {
+        console.log("Milestone ping error:", err.message);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ===== BUILD MILESTONE MESSAGE =====
+function buildMilestoneMessage(stats) {
+  const data = loadData();
+
+  const nextMilestone = getNextMilestone(stats.visits);
+
+  let progressSection = "";
+
+  if (nextMilestone) {
+    progressSection =
+`\n\nNEXT MILESTONE 📈
+
+${makeProgressBar(stats.visits, nextMilestone)}
+
+${stats.visits.toLocaleString()} / ${nextMilestone.toLocaleString()}`;
+  }
+
+  return `MILESTONES 🎉
+
+${data.history.join("\n")}${progressSection}`;
+}
+
 // ===== DASHBOARD EMBED =====
 function buildEmbed(stats) {
   const likeRatio =
@@ -95,66 +185,77 @@ function buildEmbed(stats) {
 
   return new EmbedBuilder()
     .setTitle("📊 Roblox Game Dashboard")
-    .setDescription(`\<:KnK:1509812496406675618> ${stats.name}`)
-    .setColor(000000)
+    .setDescription(`<:KnK:1509812496406675618> ${stats.name}`)
+    .setColor(0x00bfff)
+
     .setThumbnail(
       stats.icon
         ? `https://www.roblox.com/asset-thumbnail/image?assetId=${stats.icon}&width=512&height=512&format=png`
         : null
     )
+
     .addFields(
-      { name: "👥 Players", value: `\`\`\`${stats.players}\`\`\``, inline: true },
-      { name: "👀 Visits", value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``, inline: true },
-      { name: "⭐ Likes", value: `\`\`\`${stats.likes.toLocaleString()}\`\`\``, inline: true },
-      { name: "❌ Dislikes", value: `\`\`\`${stats.dislikes.toLocaleString()}\`\`\``, inline: true },
-      { name: "📈 Like Ratio", value: `\`\`\`${likeRatio}%\`\`\``, inline: true }
+      {
+        name: "👥 Players",
+        value: `\`\`\`${stats.players}\`\`\``,
+        inline: true
+      },
+      {
+        name: "👀 Visits",
+        value: `\`\`\`${stats.visits.toLocaleString()}\`\`\``,
+        inline: true
+      },
+      {
+        name: "⭐ Likes",
+        value: `\`\`\`${stats.likes.toLocaleString()}\`\`\``,
+        inline: true
+      },
+      {
+        name: "❌ Dislikes",
+        value: `\`\`\`${stats.dislikes.toLocaleString()}\`\`\``,
+        inline: true
+      },
+      {
+        name: "📈 Like Ratio",
+        value: `\`\`\`${likeRatio}%\`\`\``,
+        inline: true
+      }
     )
-    .setFooter({ text: "Live Roblox Stats" })
+
+    .setFooter({
+      text: "Live Roblox Analytics Dashboard"
+    })
+
     .setTimestamp();
 }
 
-// ===== MILESTONE TEXT BUILDER =====
-function buildMilestoneText(data) {
-  return [
-    "MILESTONES 🎉",
-    "",
-    ...data.history
-  ].join("\n");
-}
-
-// ===== CHECK MILESTONES =====
-function checkMilestones(stats, data) {
-  for (const m of milestonesList) {
-    if (stats.visits >= m.value && !data.reached.includes(m.value)) {
-      data.reached.push(m.value);
-
-      const date = new Date().toLocaleString();
-
-      const label =
-        m.value === 0
-          ? m.label
-          : `${m.label} - ${date}`;
-
-      data.history.push(label);
-
-      return true;
-    }
-  }
-  return false;
-}
-
-// ===== UPDATE =====
+// ===== UPDATE EVERYTHING =====
 async function update() {
   try {
     const stats = await fetchStats();
-    const data = loadMilestones();
 
-    const changed = checkMilestones(stats, data);
-    if (changed) saveMilestones(data);
+    // ===== CLEAN BOT STATUS =====
+    client.user.setPresence({
+      activities: [
+        {
+          name: "Roblox Dashboard",
+          type: 0
+        }
+      ],
+      status: "online"
+    });
 
+    // ===== CHECK MILESTONES =====
+    await checkMilestones(stats);
+
+    // ===== DASHBOARD CHANNEL =====
     const channel = await client.channels.fetch(CHANNEL_ID);
 
-    // ===== DASHBOARD =====
+    if (!channel) {
+      console.log("Dashboard channel not found");
+      return;
+    }
+
     const embed = buildEmbed(stats);
 
     const gameUrl = `https://www.roblox.com/games/${stats.placeId}`;
@@ -166,55 +267,96 @@ async function update() {
         .setURL(gameUrl)
     );
 
+    // ===== CREATE / UPDATE DASHBOARD =====
     if (!dashboardMessageId) {
       const msg = await channel.send({
         embeds: [embed],
         components: [row]
       });
+
       dashboardMessageId = msg.id;
+
+      console.log("Created dashboard");
     } else {
-      const msg = await channel.messages.fetch(dashboardMessageId);
+      const msg = await channel.messages.fetch(
+        dashboardMessageId
+      );
+
       await msg.edit({
         embeds: [embed],
         components: [row]
       });
+
+      console.log("Updated dashboard");
     }
 
     // ===== MILESTONE MESSAGE =====
-    let milestoneChannel = await client.channels.fetch(LOG_CHANNEL_ID);
-    if (milestoneChannel) {
-      const text = buildMilestoneText(data);
+    const logChannel = await client.channels.fetch(
+      LOG_CHANNEL_ID
+    );
 
-      if (!milestoneMessageId) {
-        const msg = await milestoneChannel.send(text);
-        milestoneMessageId = msg.id;
-        data.messageId = msg.id;
-        saveMilestones(data);
-      } else {
-        try {
-          const msg = await milestoneChannel.messages.fetch(
-            data.messageId || milestoneMessageId
-          );
-          await msg.edit(text);
-        } catch {
-          const msg = await milestoneChannel.send(text);
-          milestoneMessageId = msg.id;
-          data.messageId = msg.id;
-          saveMilestones(data);
-        }
+    if (!logChannel) return;
+
+    const data = loadData();
+
+    const text = buildMilestoneMessage(stats);
+
+    if (!data.milestoneMessageId) {
+      const msg = await logChannel.send(text);
+
+      data.milestoneMessageId = msg.id;
+
+      saveData(data);
+    } else {
+      try {
+        const msg = await logChannel.messages.fetch(
+          data.milestoneMessageId
+        );
+
+        await msg.edit(text);
+      } catch {
+        const msg = await logChannel.send(text);
+
+        data.milestoneMessageId = msg.id;
+
+        saveData(data);
       }
     }
 
   } catch (err) {
-    console.log("Error:", err.message);
+    console.log("Update error:", err.message);
   }
 }
+
+// ===== JOIN MESSAGES =====
+client.on("guildMemberAdd", async (member) => {
+  try {
+    const joinsChannel = await client.channels.fetch(
+      JOINS_CHANNEL_ID
+    );
+
+    if (!joinsChannel) return;
+
+    joinsChannel.send(
+`🌸 Welcome ${member} to **Katana no Kaze**!
+
+You are member #${member.guild.memberCount}
+
+Enjoy your stay ⚔️`
+    );
+
+  } catch (err) {
+    console.log("Join message error:", err.message);
+  }
+});
 
 // ===== READY =====
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   update();
+
+  // Update every 60 seconds
   setInterval(update, 60000);
 });
 
