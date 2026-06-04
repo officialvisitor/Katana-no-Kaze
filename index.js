@@ -41,6 +41,7 @@ const BLOCKED_WORDS = [
   "nigger",
   "faggot",
   "tranny",
+  "trannie",
   "fat",
   "biggy",
   "darkie",
@@ -49,15 +50,11 @@ const BLOCKED_WORDS = [
   "darky",
   "fatso",
   "nga",
-  "ng",
   "ngr",
   "biggie",
   "fatty",
   "fattie",
-  "nig",
-  "ga",
   "gga",
-  "ni"
 ];
 
 // ===== MILESTONES =====
