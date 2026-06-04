@@ -50,10 +50,14 @@ const BLOCKED_WORDS = [
   "fatso",
   "nga",
   "ng",
-  "ngr"
+  "ngr",
   "biggie",
   "fatty",
-  "fattie"
+  "fattie",
+  "nig",
+  "ga",
+  "gga",
+  "ni"
 ];
 
 // ===== MILESTONES =====
