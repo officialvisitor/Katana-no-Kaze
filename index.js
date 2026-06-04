@@ -13,7 +13,9 @@ const fs = require("fs");
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
   ]
 });
 
@@ -23,6 +25,8 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 const JOINS_CHANNEL_ID = process.env.JOINS_CHANNEL_ID;
 const OWNER_ROLE_ID = process.env.OWNER_ROLE_ID;
+const AUTO_ROLE_ID = process.env.AUTO_ROLE_ID;
+const MOD_LOGS_CHANNEL_ID = process.env.MOD_LOGS_CHANNEL_ID;
 const UNIVERSE_ID = process.env.UNIVERSE_ID;
 
 // ===== FILE STORAGE =====
@@ -30,6 +34,27 @@ const DATA_FILE = "./milestones.json";
 
 // ===== MESSAGE IDS =====
 let dashboardMessageId = null;
+
+// ===== BLOCKED WORDS =====
+const BLOCKED_WORDS = [
+  "nigga",
+  "nigger",
+  "faggot",
+  "tranny",
+  "fat",
+  "biggy",
+  "darkie",
+  "blacky",
+  "blackie",
+  "darky",
+  "fatso",
+  "nga",
+  "ng",
+  "ngr"
+  "biggie",
+  "fatty",
+  "fattie"
+];
 
 // ===== MILESTONES =====
 const milestonesList = [
@@ -96,15 +121,17 @@ async function fetchStats() {
 // ===== PROGRESS BAR =====
 function makeProgressBar(current, goal) {
   const size = 10;
+
   const percent = Math.min(current / goal, 1);
 
   const filled = Math.round(size * percent);
+
   const empty = size - filled;
 
   return `${"█".repeat(filled)}${"░".repeat(empty)} ${Math.round(percent * 100)}%`;
 }
 
-// ===== GET NEXT MILESTONE =====
+// ===== NEXT MILESTONE =====
 function getNextMilestone(visits) {
   for (const milestone of milestonesList) {
     if (visits < milestone) {
@@ -120,10 +147,12 @@ async function checkMilestones(stats) {
   const data = loadData();
 
   for (const milestone of milestonesList) {
+
     if (
       stats.visits >= milestone &&
       !data.reached.includes(milestone)
     ) {
+
       data.reached.push(milestone);
 
       const date = new Date().toLocaleString();
@@ -136,13 +165,19 @@ async function checkMilestones(stats) {
 
       // ===== OWNER PING =====
       try {
-        const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+
+        const logChannel = await client.channels.fetch(
+          LOG_CHANNEL_ID
+        );
 
         if (logChannel) {
+
           await logChannel.send(
             `<@&${OWNER_ROLE_ID}> 🎉 ${stats.name} reached ${milestone.toLocaleString()} visits!`
           );
+
         }
+
       } catch (err) {
         console.log("Milestone ping error:", err.message);
       }
@@ -156,19 +191,24 @@ async function checkMilestones(stats) {
 
 // ===== BUILD MILESTONE MESSAGE =====
 function buildMilestoneMessage(stats) {
+
   const data = loadData();
 
-  const nextMilestone = getNextMilestone(stats.visits);
+  const nextMilestone = getNextMilestone(
+    stats.visits
+  );
 
   let progressSection = "";
 
   if (nextMilestone) {
+
     progressSection =
 `\n\nNEXT MILESTONE 📈
 
 ${makeProgressBar(stats.visits, nextMilestone)}
 
 ${stats.visits.toLocaleString()} / ${nextMilestone.toLocaleString()}`;
+
   }
 
   return `MILESTONES 🎉
@@ -178,14 +218,24 @@ ${data.history.join("\n")}${progressSection}`;
 
 // ===== DASHBOARD EMBED =====
 function buildEmbed(stats) {
+
   const likeRatio =
     stats.likes + stats.dislikes > 0
-      ? ((stats.likes / (stats.likes + stats.dislikes)) * 100).toFixed(1)
+      ? (
+          (stats.likes /
+            (stats.likes + stats.dislikes)) *
+          100
+        ).toFixed(1)
       : "0.0";
 
   return new EmbedBuilder()
+
     .setTitle("📊 Roblox Game Dashboard")
-    .setDescription(`<:KnK:1509812496406675618> ${stats.name}`)
+
+    .setDescription(
+      `<:KnK:1509812496406675618> ${stats.name}`
+    )
+
     .setColor(0x00bfff)
 
     .setThumbnail(
@@ -229,12 +279,14 @@ function buildEmbed(stats) {
     .setTimestamp();
 }
 
-// ===== UPDATE EVERYTHING =====
+// ===== UPDATE DASHBOARD + MILESTONES =====
 async function update() {
+
   try {
+
     const stats = await fetchStats();
 
-    // ===== CLEAN BOT STATUS =====
+    // ===== BOT STATUS =====
     client.user.setPresence({
       activities: [
         {
@@ -249,7 +301,9 @@ async function update() {
     await checkMilestones(stats);
 
     // ===== DASHBOARD CHANNEL =====
-    const channel = await client.channels.fetch(CHANNEL_ID);
+    const channel = await client.channels.fetch(
+      CHANNEL_ID
+    );
 
     if (!channel) {
       console.log("Dashboard channel not found");
@@ -258,17 +312,21 @@ async function update() {
 
     const embed = buildEmbed(stats);
 
-    const gameUrl = `https://www.roblox.com/games/${stats.placeId}`;
+    const gameUrl =
+      `https://www.roblox.com/games/${stats.placeId}`;
 
     const row = new ActionRowBuilder().addComponents(
+
       new ButtonBuilder()
         .setLabel("Open Game")
         .setStyle(ButtonStyle.Link)
         .setURL(gameUrl)
+
     );
 
     // ===== CREATE / UPDATE DASHBOARD =====
     if (!dashboardMessageId) {
+
       const msg = await channel.send({
         embeds: [embed],
         components: [row]
@@ -277,7 +335,9 @@ async function update() {
       dashboardMessageId = msg.id;
 
       console.log("Created dashboard");
+
     } else {
+
       const msg = await channel.messages.fetch(
         dashboardMessageId
       );
@@ -302,19 +362,25 @@ async function update() {
     const text = buildMilestoneMessage(stats);
 
     if (!data.milestoneMessageId) {
+
       const msg = await logChannel.send(text);
 
       data.milestoneMessageId = msg.id;
 
       saveData(data);
+
     } else {
+
       try {
+
         const msg = await logChannel.messages.fetch(
           data.milestoneMessageId
         );
 
         await msg.edit(text);
+
       } catch {
+
         const msg = await logChannel.send(text);
 
         data.milestoneMessageId = msg.id;
@@ -324,13 +390,30 @@ async function update() {
     }
 
   } catch (err) {
-    console.log("Update error:", err.message);
+
+    console.log(
+      "Update error:",
+      err.message
+    );
+
   }
 }
 
-// ===== JOIN MESSAGES =====
+// ===== JOIN MESSAGES + AUTO ROLE =====
 client.on("guildMemberAdd", async (member) => {
+
   try {
+
+    // ===== AUTO ROLE =====
+    const role = member.guild.roles.cache.get(
+      AUTO_ROLE_ID
+    );
+
+    if (role) {
+      await member.roles.add(role);
+    }
+
+    // ===== JOIN MESSAGE =====
     const joinsChannel = await client.channels.fetch(
       JOINS_CHANNEL_ID
     );
@@ -346,18 +429,82 @@ Enjoy your stay ⚔️`
     );
 
   } catch (err) {
-    console.log("Join message error:", err.message);
+
+    console.log(
+      "Join message/autorole error:",
+      err.message
+    );
+
   }
+});
+
+// ===== AUTOMOD =====
+client.on("messageCreate", async (message) => {
+
+  // Ignore bots
+  if (message.author.bot) return;
+
+  // Ignore DMs
+  if (!message.guild) return;
+
+  const content =
+    message.content.toLowerCase();
+
+  // Find blocked word
+  const foundWord = BLOCKED_WORDS.find(word =>
+    content.includes(word.toLowerCase())
+  );
+
+  if (!foundWord) return;
+
+  try {
+
+    // Delete message
+    await message.delete();
+
+    // ===== LOG CHANNEL =====
+    const logChannel = await client.channels.fetch(
+      MOD_LOGS_CHANNEL_ID
+    );
+
+    if (logChannel) {
+
+      await logChannel.send(
+`🛡️ AutoMod Removed Message
+
+👤 User: ${message.author.tag}
+📍 Channel: ${message.channel}
+🚫 Triggered Word: ||${foundWord}||
+
+💬 Message:
+${message.content}`
+      );
+
+    }
+
+  } catch (err) {
+
+    console.log(
+      "AutoMod error:",
+      err.message
+    );
+
+  }
+
 });
 
 // ===== READY =====
 client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
+
+  console.log(
+    `Logged in as ${client.user.tag}`
+  );
 
   update();
 
   // Update every 60 seconds
   setInterval(update, 60000);
+
 });
 
 // ===== LOGIN =====
