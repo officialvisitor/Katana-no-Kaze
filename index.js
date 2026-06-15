@@ -74,7 +74,7 @@ const BLOCKED_WORDS = [
   "n1gg3r",
   "n1gg4",
   "nibba",
-  "n1bb4"
+  "n1bb4",
   "n i g g a",
   "n i g g e r",
   "n ig ger",
