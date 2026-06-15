@@ -83,7 +83,7 @@ const BLOCKED_WORDS = [
   "ni gg a"
   "n i gga",
   "n igg a",
-  "n ig ga"
+  "n ig ga",
   "tr4nny",
   "tranni",
   "trann13",
