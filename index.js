@@ -46,23 +46,13 @@ const PLAYERS_FILE = "./players.json";
 // =====================================================
 
 const BLOCKED_WORDS = [
-"tranny",
-"nigga",
-"nigger",
-"trannie",
-"trannies",
-"trannys",
-"shemale",
-"faggot",
-"fag",
-"n1gg3r",
-"n1gg4",
-"nibba",
-"n1bb4",
-"tr4nny",
-"tranni",
-"trann13",
-"tr4nn1"
+  "nigger",
+  "nigga",
+  "tranny",
+  "trannies",
+  "trannie",
+  "tranni",
+  "gook"
 ];
 
 // =====================================================
@@ -658,10 +648,10 @@ client.on("messageCreate", async (message) => {
     const rank = updateAndGetRank(stats.username, stats.kills);
 
     message.reply(
-`⚔️ KATANA NO KAZE PLAYER STATS
+`<:KnK:1509812496406675618> PLAYER STATS
 👤 Username:
 ${stats.username}
-🩸 Total Kills:
+⚔️ Total Kills:
 ${stats.kills.toLocaleString()}
 🏆 Rank:
 ${rank}`
