@@ -6,6 +6,7 @@ const {
   ButtonBuilder,
   ButtonStyle
 } = require("discord.js");
+require('dotenv').config();
 
 const axios = require("axios");
 const fs = require("fs");
@@ -682,4 +683,4 @@ client.once("ready", () => {
 // =====================================================
 // LOGIN
 // =====================================================
-client.login(process.env.SOMETHING_HERE)
+client.login(process.env.DISCORD_TOKEN)
