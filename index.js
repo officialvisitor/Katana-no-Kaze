@@ -682,5 +682,4 @@ client.once("ready", () => {
 // =====================================================
 // LOGIN
 // =====================================================
-console.log("Token length:", process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.length : "UNDEFINED");
-client.login(DISCORD_TOKEN);
+client.login(process.env.SOMETHING_HERE)
